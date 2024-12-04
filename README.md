@@ -70,13 +70,13 @@ ollama run llama3.2
 A aplicação utiliza rede neural baseada no Ollama para gerar as respostas de texto. Por padrão, o servidor deve estar rodando em http://0.0.0.0:11434/api/chat. 
 Caso tenha a API do Ollama rodando em outro host ou porta, será necessário modificar a URL OLLAMA_URL no arquivo main.py.
 
-##💡 Como Usar
+## 💡 Como Usar
 
 - Abra o aplicativo no seu navegador.
 - Digite uma mensagem no campo de entrada e pressione "Enviar".
 - O chatbot gerará uma resposta com base na sua mensagem.
 - Você pode arrastar a janela de chat pela tela, clicando e segurando o cabeçalho.
 
-🙏 Contribuindo
+## 🙏 Contribuindo
 
 - Fique à vontade para fazer um fork deste repositório, enviar problemas e criar pull requests para contribuir.
