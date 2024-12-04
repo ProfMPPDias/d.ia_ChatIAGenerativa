@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt_BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>d.IA - Chat IA Generativa</title>
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/vZxccjSx/robot.png">
+    <style>
+        /* Dracula Theme Colors */
+        :root {
+            --background: #282a36;
+            --current-line: #44475a;
+            --foreground: #f8f8f2;
+            --comment: #6272a4;
+            --cyan: #8be9fd;
+            --green: #50fa7b;
+            --orange: #ffb86c;
+            --pink: #ff79c6;
+            --purple: #bd93f9;
+            --dark-purple: #5d3f87;
+            --light-purple: #9c6cff;
+            --red: #ff5555;
+            --yellow: #f1fa8c;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: var(--background);
+            color: var(--foreground);
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 800px;
+            background-color: var(--current-line);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            height: 80%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            cursor: move;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: var(--current-line);
+            padding: 10px;
+            border-radius: 10px;
+            cursor: move;
+            user-select: none;
+        }
+
+        .messages {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-bottom: 10px;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            display: flex;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        .message-icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+        .user-message {
+            background-color: var(--purple);
+            color: var(--background);
+        }
+
+        .bot-message {
+            background-color: var(--cyan);
+            color: var(--background);
+            margin-bottom: 20px;
+        }
+
+        .message-name {
+            font-weight: bold;
+        }
+
+        .message-time {
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+            font-size: 12px;
+            color: var(--comment);
+        }
+
+        .copy-button {
+            position: absolute;
+            bottom: 5px;
+            right: 100px;
+            font-size: 12px;
+            padding: 3px 8px;
+            background-color: var(--dark-purple);
+            color: var(--foreground);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .copy-button:hover {
+            background-color: var(--light-purple);
+        }
+
+        .copy-tooltip {
+            position: absolute;
+            bottom: 35px;
+            right: 100px;
+            background-color: var(--green);
+            color: var(--background);
+            font-size: 12px;
+            padding: 5px;
+            border-radius: 5px;
+            display: none;
+            z-index: 10;
+        }
+
+        .loading {
+            margin-top: 5px;
+            color: var(--light-purple);
+            font-style: italic;
+        }
+
+        .chat-input-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            position: relative;
+            z-index: 100;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 120px);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--comment);
+            margin-right: 10px;
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            background-color: var(--dark-purple);
+            color: var(--foreground);
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: var(--light-purple);
+        }
+
+        .footer {
+            font-size: 11px;
+            color: #9c6cff;
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header" id="chat-header">ℹ️Clique e segure AQUI neste cabeçalho, para arrastar a janela.</div>
+        <div class="messages" id="messages"></div>
+        <div class="chat-input-container">
+            <form id="chat-form" style="width: 100%;">
+                <input type="text" id="user-message" placeholder="Digite sua mensagem..." autocomplete="off" required>
+                <button type="submit">Enviar</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="footer">
+        D.ia © 2024-2024 Marcos Dias | Python 🐍 and Flask 🌶️
+    </div>
+
+    <script>
+        let firstMessageSent = false;
+
+        function formatDate() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${day}/${month} ${hours}:${minutes}`;
+        }
+
+        function addCopyFeature(messageDiv, messageText, isWelcomeMessage = false) {
+            if (isWelcomeMessage) return;
+
+            const copyButton = document.createElement('button');
+            copyButton.classList.add('copy-button');
+            copyButton.textContent = 'Copiar';
+
+            const tooltip = document.createElement('span');
+            tooltip.classList.add('copy-tooltip');
+            tooltip.textContent = 'Copiado!';
+            messageDiv.appendChild(tooltip);
+
+            copyButton.onclick = function () {
+                const textArea = document.createElement('textarea');
+                textArea.value = messageText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        tooltip.style.display = 'block';
+                        setTimeout(() => {
+                            tooltip.style.display = 'none';
+                        }, 1500);
+                    } else {
+                        alert('Falha ao copiar com execCommand.');
+                    }
+                } catch (err) {
+                    alert('Erro ao tentar copiar o texto. Tente novamente.');
+                }
+                document.body.removeChild(textArea);
+            };
+
+            messageDiv.appendChild(copyButton);
+        }
+
+        function showLoadingIndicator(messagesDiv) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.classList.add('loading');
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.textContent = 'Pensando... 🧠';
+            messagesDiv.appendChild(loadingDiv);
+        }
+
+        function removeLoadingIndicator() {
+            const loadingDiv = document.getElementById('loading-indicator');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        window.onload = function() {
+            if (!firstMessageSent) {
+                const messagesDiv = document.getElementById('messages');
+                const welcomeMessageDiv = document.createElement('div');
+                welcomeMessageDiv.classList.add('message', 'bot-message');
+                const messageText = 'Seja bem-vindo, o que posso ajudar?';
+                welcomeMessageDiv.innerHTML = '<span class="message-icon">🤖</span> <span class="message-name">IA:</span> ' + messageText;
+                const welcomeTime = document.createElement('span');
+                welcomeTime.classList.add('message-time');
+                welcomeTime.innerText = formatDate();
+                welcomeMessageDiv.appendChild(welcomeTime);
+                messagesDiv.appendChild(welcomeMessageDiv);
+                firstMessageSent = true;
+            }
+        };
+
+        document.getElementById('chat-form').onsubmit = async function(event) {
+            event.preventDefault();
+            const userMessage = document.getElementById('user-message').value;
+            if (!userMessage) return;
+
+            const messagesDiv = document.getElementById('messages');
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('message', 'user-message');
+            userMessageDiv.innerHTML = '<span class="message-icon">😼</span> <span class="message-name">Eu:</span> ' + userMessage;
+            const userTime = document.createElement('span');
+            userTime.classList.add('message-time');
+            userTime.innerText = formatDate();
+            userMessageDiv.appendChild(userTime);
+            messagesDiv.appendChild(userMessageDiv);
+            document.getElementById('user-message').value = '';
+
+            showLoadingIndicator(messagesDiv);
+
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ message: userMessage })
+            });
+
+            removeLoadingIndicator();
+
+            if (response.ok) {
+                const data = await response.json();
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.classList.add('message', 'bot-message');
+                const messageText = data.response;
+                botMessageDiv.innerHTML = '<span class="message-icon">🤖</span> <span class="message-name">IA:</span> ' + messageText;
+                const botTime = document.createElement('span');
+                botTime.classList.add('message-time');
+                botTime.innerText = formatDate();
+                botMessageDiv.appendChild(botTime);
+                addCopyFeature(botMessageDiv, messageText);
+                messagesDiv.appendChild(botMessageDiv);
+            }
+        };
+
+        function dragElement(elmnt) {
+            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            var isDragging = false;
+
+            if (document.getElementById(elmnt.id + "-header")) {
+                document.getElementById(elmnt.id + "-header").addEventListener('mousedown', dragMouseDown);
+            } else {
+                elmnt.addEventListener('mousedown', dragMouseDown);
+            }
+
+            function dragMouseDown(e) {
+                // Verifica se o clique não foi em um elemento interativo
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+                    return;
+                }
+
+                isDragging = false;
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+
+                document.addEventListener('mousemove', elementDrag);
+                document.addEventListener('mouseup', closeDragElement);
+                document.addEventListener('mouseleave', closeDragElement);
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                
+                // Começar a arrastar só após um movimento significativo
+                if (!isDragging) {
+                    const movementX = Math.abs(e.clientX - pos3);
+                    const movementY = Math.abs(e.clientY - pos4);
+                    if (movementX > 5 || movementY > 5) {
+                        isDragging = true;
+                    } else {
+                        return;
+                    }
+                }
+
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.removeEventListener('mousemove', elementDrag);
+                document.removeEventListener('mouseup', closeDragElement);
+                document.removeEventListener('mouseleave', closeDragElement);
+                isDragging = false;
+            }
+        }
+
+        dragElement(document.getElementById('chat-container'));
+    </script>
+</body>
+</html>
